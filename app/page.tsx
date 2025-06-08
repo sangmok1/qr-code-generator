@@ -54,7 +54,7 @@ export default function HomePage() {
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
             QR 코드를
-            <span className="text-blue-600">쉽고 빠르게</span>
+            <span className="text-blue-600"> 쉽고 빠르게</span>
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
             URL을 입력하고 나만의 스타일로 QR 코드를 생성하세요. 구글 계정으로 로그인하여 QR 코드를 저장하고 관리할 수
@@ -130,7 +130,7 @@ export default function HomePage() {
         </div>
 
         {/* 광고 배너 */}
-        <AdBanner />
+        {/* <AdBanner /> */}
       </main>
 
       {/* 푸터 */}

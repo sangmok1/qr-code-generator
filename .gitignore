@@ -42,3 +42,6 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+##DB_info
+lib/db.ts
