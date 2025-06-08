@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { db } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'code 파라미터가 필요합니다.' }, { status: 400 });
   }
 
-  const connection = await pool.getConnection();
+  const connection = await db.getConnection();
   try {
     // 1. code로 원래 url 찾기
     const [rows]: any = await connection.execute(
