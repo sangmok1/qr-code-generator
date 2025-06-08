@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import pool from '@/lib/db';
+import { db } from '@/lib/db';
 import QRCode from 'qrcode';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { s3Client } from '@/lib/s3';
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       errorCorrectionLevel: errorCorrection || 'M',
     });
     // 2. 중계 url 생성
-    const connection = await pool.getConnection();
+    const connection = await db.getConnection();
     let redirectCode = '';
     let trackingDataUrl = '';
     let trackingS3Url = '';
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
 
-    const connection = await pool.getConnection();
+    const connection = await db.getConnection();
     try {
       const [rows]: any = await connection.execute(
         `SELECT q.*, COUNT(a.id) as view_count
@@ -157,7 +157,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'QR URL이 필요합니다.' }, { status: 400 });
     }
 
-    const connection = await pool.getConnection();
+    const connection = await db.getConnection();
     try {
       await connection.execute(
         'UPDATE qr_info SET status = 0 WHERE id = ? AND qr_url = ?',

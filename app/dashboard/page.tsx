@@ -28,7 +28,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import type { QRCodeErrorCorrectionLevel } from "qrcode.react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
+// QRCodeErrorCorrectionLevel 타입 직접 정의
+type QRCodeErrorCorrectionLevel = "L" | "M" | "Q" | "H";
 
 interface SavedQRCode {
   id: string
@@ -216,14 +219,11 @@ export default function DashboardPage() {
     setModalOpen(true);
   };
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("dashboardTab", tab);
-    }
-  }, [tab]);
-
   const handleTabChange = (value: string) => {
     setTab(value);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dashboardTab", value);
+    }
   };
 
   // 로딩 중이거나 세션이 없으면 로딩 표시
@@ -243,249 +243,166 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       {/* 헤더 */}
-      <div className="max-w-4xl mx-auto mb-4">
-        <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <User className="h-8 w-8 text-gray-600 dark:text-gray-300" />
-            <div>
-              <p className="font-medium">{session.user?.name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{session.user?.email}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleGoHome}>
-              <Home className="h-4 w-4 mr-2" />홈
-            </Button>
-            <ThemeToggle />
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
+      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <User className="h-8 w-8 text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">내 QR 대시보드</h1>
         </div>
-      </div>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <Button variant="outline" onClick={handleGoHome}>홈으로</Button>
+          <Button variant="destructive" onClick={handleSignOut}>로그아웃</Button>
+        </div>
+      </header>
 
-      {/* 메인 컨텐츠 */}
-      <div className="flex items-center justify-center">
-        <Card className="w-full max-w-4xl">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Static QR Code Generator</CardTitle>
-            <p className="text-center text-muted-foreground mt-2">Generate and manage static QR codes</p>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="generate">QR 코드 생성</TabsTrigger>
-                <TabsTrigger value="saved">저장된 QR 코드 ({qrCodes.length})</TabsTrigger>
-              </TabsList>
+      <main className="container mx-auto px-4 py-8">
+        <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="mb-8 flex gap-2">
+            <TabsTrigger value="generate">QR 코드 생성</TabsTrigger>
+            <TabsTrigger value="saved">내 QR 목록</TabsTrigger>
+          </TabsList>
 
-              <TabsContent value="generate" className="space-y-4">
-                <form onSubmit={handleGenerateQRCode} className="space-y-4">
-                  <div>
-                    <Label htmlFor="url">URL</Label>
-                    <Input
-                      id="url"
-                      type="url"
-                      placeholder="Enter a URL"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      required
-                      className="w-full"
-                      disabled={isGenerated}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="color">QR Code Color</Label>
-                      <Input
-                        id="color"
-                        type="color"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value)}
-                        className="w-full h-10"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="backgroundColor">Background Color</Label>
-                      <Input
-                        id="backgroundColor"
-                        type="color"
-                        value={backgroundColor}
-                        onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="w-full h-10"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="size">
-                      Size: {size}x{size}
-                    </Label>
-                    <Slider
-                      id="size"
-                      min={100}
-                      max={400}
-                      step={10}
-                      value={[size]}
-                      onValueChange={(value) => setSize(value[0])}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="errorCorrection">Error Correction Level</Label>
-                    <Select value={errorCorrection} onValueChange={(value: QRCodeErrorCorrectionLevel) => setErrorCorrection(value)}>
-                      <SelectTrigger id="errorCorrection">
-                        <SelectValue placeholder="Select error correction level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="L">Low (7%)</SelectItem>
-                        <SelectItem value="M">Medium (15%)</SelectItem>
-                        <SelectItem value="Q">Quartile (25%)</SelectItem>
-                        <SelectItem value="H">High (30%)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={isGenerated}>
-                      Generate Static QR Code
-                    </Button>
-                    {isGenerated && (
-                      <Button type="button" variant="outline" onClick={resetGenerator}>
-                        Reset
-                      </Button>
-                    )}
-                  </div>
-                </form>
-
-                {qrCode && (
-                  <div className="flex flex-col items-center space-y-4 mt-6">
-                    <QRCodeSVG
-                      ref={qrCodeRef}
-                      value={redirectUrl || url}
-                      size={size}
-                      fgColor={color}
-                      bgColor={backgroundColor}
-                      level={errorCorrection}
-                      includeMargin={true}
-                    />
-                    <div className="flex flex-col sm:flex-row gap-2 items-center">
-                      <Button onClick={handleSaveQRCode} variant="secondary">
-                        QR 코드 저장
-                      </Button>
-                      <DownloadButton
-                        svgRef={qrCodeRef}
-                        url={qrCode}
-                        size={size}
-                        fileName={`qrcode-${new Date().getTime()}`}
-                      />
-                    </div>
-                    {showSaveMessage && (
-                      <div
-                        className={`text-center text-sm p-2 rounded ${
-                          saveMessage.includes("성공") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {saveMessage}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="saved" className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-                  <SearchBar onSearch={handleSearch} />
-                  {savedQRCodes.length > 0 && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="flex items-center gap-1">
-                          <Trash className="h-4 w-4" />
-                          전체 삭제
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>모든 QR 코드 삭제</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            저장된 모든 QR 코드를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>취소</AlertDialogCancel>
-                          <AlertDialogAction onClick={deleteAllQRCodes}>삭제</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+          <TabsContent value="generate">
+            {/* QR 생성 폼 및 미리보기 */}
+            <form onSubmit={handleGenerateQRCode} className="flex flex-col gap-4 max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+              <input
+                type="text"
+                placeholder="URL을 입력하세요"
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+              />
+              <div className="flex gap-4 w-full">
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">색상</label>
+                  <input type="color" value={color} onChange={e => setColor(e.target.value)} />
                 </div>
-
-                {qrCodes.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    저장된 QR 코드가 없습니다.
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {qrCodes.map((qr) => (
-                      <Card key={qr.qr_url} className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                          <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="flex flex-col items-center">
-                              <img src={qr.qr_url} alt="원래 QR 코드" className="w-20 h-20 cursor-pointer" onClick={() => handleImgClick(qr.qr_url)} />
-                              <div className="text-xs mt-1">원래 URL</div>
-                            </div>
-                            <div className="flex flex-col items-center relative">
-                              <img src={qr.tracking_url} alt="트래킹 QR 코드" className="w-20 h-20 cursor-pointer" onClick={() => handleImgClick(qr.tracking_url)} />
-                              <div className="absolute top-0 right-0">
-                                <div className="group relative inline-block">
-                                  <button className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs focus:outline-none">?</button>
-                                  <div className="hidden group-hover:block absolute z-10 w-56 p-2 bg-white border border-gray-300 rounded shadow text-xs text-gray-800 left-6 top-0">
-                                    해당 QR 이미지를 사용하시면 QR에 접속한 수를 확인하실 수 있습니다.
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-xs mt-1">트래킹 QR</div>
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <LinkIcon className="h-4 w-4" />
-                                <span className="font-medium break-all">{qr.url}</span>
-                              </div>
-                              <div className="text-xs text-gray-500 break-all">
-                                중계 URL: https://www.spl.it.kr/qr/redirect?code={qr.redirect_code}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(qr.date).toLocaleString("ko-KR")}</span>
-                              </div>
-                              {typeof qr.view_count === 'number' && (
-                                <div className="flex items-center gap-2 text-sm text-blue-600">
-                                  <span>조회수: {qr.view_count}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-row sm:flex-col gap-2 self-end sm:self-start">
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => deleteQRCode(qr.qr_url)}
-                              className="flex items-center gap-1"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              삭제
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">배경색</label>
+                  <input type="color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">크기</label>
+                  <input type="number" min={100} max={400} value={size} onChange={e => setSize(Number(e.target.value))} className="w-20" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">정확도</label>
+                  <select value={errorCorrection} onChange={e => setErrorCorrection(e.target.value as QRCodeErrorCorrectionLevel)}>
+                    <option value="L">L</option>
+                    <option value="M">M</option>
+                    <option value="Q">Q</option>
+                    <option value="H">H</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="lg" className="w-full">QR 코드 미리보기</Button>
+                {isGenerated && (
+                  <Button type="button" variant="outline" onClick={resetGenerator}>초기화</Button>
                 )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </form>
+            {isGenerated && url && (
+              <div className="mt-8 flex flex-col items-center">
+                <QRCodeSVG
+                  ref={qrCodeRef as any}
+                  value={url}
+                  size={size}
+                  fgColor={color}
+                  bgColor={backgroundColor}
+                  level={errorCorrection}
+                />
+                <div className="flex flex-col sm:flex-row gap-2 items-center mt-4">
+                  <Button onClick={handleSaveQRCode} variant="secondary">QR 코드 저장</Button>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="saved">
+            {/* 내 QR 목록: DB에서 불러온 정적/추적 QR, 조회수, 생성일, 툴팁 안내 */}
+            <div className="mb-4 text-right text-gray-700 dark:text-gray-300">
+              총 <span className="font-bold text-blue-600">{qrCodes.length}</span>개의 QR 코드
+            </div>
+            {qrCodes.length === 0 ? (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-16">
+                저장된 QR 코드가 없습니다.<br />
+                상단에서 새 QR 코드를 생성하고 저장해보세요!
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {qrCodes.map((qr: any) => (
+                  <Card key={qr.qr_url} className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* 정적 QR */}
+                        <div className="flex flex-col items-center">
+                          <img src={qr.qr_url} alt="정적 QR 코드" className="w-20 h-20 cursor-pointer" onClick={() => handleImgClick(qr.qr_url)} />
+                          <div className="text-xs mt-1">정적 QR</div>
+                        </div>
+                        {/* 추적 QR + 툴팁 */}
+                        <div className="flex flex-col items-center relative">
+                          <img src={qr.tracking_url} alt="추적 QR 코드" className="w-20 h-20 cursor-pointer" onClick={() => handleImgClick(qr.tracking_url)} />
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button className="absolute top-0 right-0 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs focus:outline-none">?</button>
+                              </TooltipTrigger>
+                              <TooltipContent side="left">
+                                이 QR로 접근 시 접속 통계가 기록됩니다.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="text-xs mt-1">추적 QR</div>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <LinkIcon className="h-4 w-4" />
+                            <span className="font-medium break-all">{qr.url}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 break-all">
+                            중계 URL: https://www.spl.it.kr/qr/redirect?code={qr.redirect_code}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            <span>{qr.date ? new Date(qr.date).toLocaleString("ko-KR") : "-"}</span>
+                          </div>
+                          {typeof qr.view_count === 'number' && (
+                            <div className="flex items-center gap-2 text-sm text-blue-600">
+                              <span>조회수: {qr.view_count}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-row sm:flex-col gap-2 self-end sm:self-start">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteQRCode(qr.qr_url)}
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* 저장/삭제/조회 UX 개선: 저장/삭제/조회 시 알림 메시지 */}
+        {showSaveMessage && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded shadow-lg z-50">
+            {saveMessage}
+          </div>
+        )}
+      </main>
 
       {/* QR 이미지 확대 모달 */}
       {modalOpen && modalImg && (

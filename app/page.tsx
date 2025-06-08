@@ -7,18 +7,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { QrCode, Download, Shield, Zap, Users } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AdBanner } from "@/components/ad-banner"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { QRCodeSVG } from "qrcode.react"
 
 export default function HomePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  // 이미 로그인된 사용자는 대시보드로 리다이렉트
-  useEffect(() => {
-    if (session) {
-      router.push("/dashboard")
-    }
-  }, [session, router])
+  // 비로그인 임시 QR 생성 상태
+  const [tempUrl, setTempUrl] = useState("");
+  const [tempColor, setTempColor] = useState("#000000");
+  const [tempBgColor, setTempBgColor] = useState("#ffffff");
+  const [tempSize, setTempSize] = useState(200);
+  const [tempErrorCorrection, setTempErrorCorrection] = useState("M");
+  const [isTempGenerated, setIsTempGenerated] = useState(false);
+
+  const handleTempGenerate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsTempGenerated(true);
+  };
 
   const handleGetStarted = () => {
     router.push("/login")
@@ -61,9 +68,67 @@ export default function HomePage() {
             있습니다.
           </p>
           <Button onClick={handleGetStarted} size="lg" className="text-lg px-8 py-4">
-            서비스 이용하기
+            구글 로그인으로 QR코드 관리하기
           </Button>
         </div>
+
+        {/* 비로그인 QR 생성 폼 */}
+        {status !== "authenticated" && (
+          <div className="max-w-xl mx-auto mb-16 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">로그인 없이 QR 코드 만들기</h3>
+            <form onSubmit={handleTempGenerate} className="flex flex-col gap-4 items-center">
+              <input
+                type="text"
+                placeholder="URL을 입력하세요"
+                value={tempUrl}
+                onChange={e => setTempUrl(e.target.value)}
+                className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+              />
+              <div className="flex gap-4 w-full">
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">색상</label>
+                  <input type="color" value={tempColor} onChange={e => setTempColor(e.target.value)} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">배경색</label>
+                  <input type="color" value={tempBgColor} onChange={e => setTempBgColor(e.target.value)} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">크기</label>
+                  <input type="number" min={100} max={400} value={tempSize} onChange={e => setTempSize(Number(e.target.value))} className="w-20" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-sm mb-1">정확도</label>
+                  <select value={tempErrorCorrection} onChange={e => setTempErrorCorrection(e.target.value)}>
+                    <option value="L">L</option>
+                    <option value="M">M</option>
+                    <option value="Q">Q</option>
+                    <option value="H">H</option>
+                  </select>
+                </div>
+              </div>
+              <Button type="submit" size="lg" className="w-full">QR 코드 생성</Button>
+            </form>
+            {isTempGenerated && tempUrl && (
+              <div className="mt-8 flex flex-col items-center">
+                <div className="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg">
+                  <QRCodeSVG
+                    value={tempUrl}
+                    size={tempSize}
+                    fgColor={tempColor}
+                    bgColor={tempBgColor}
+                    level={tempErrorCorrection as any}
+                  />
+                </div>
+                <p className="mt-2 text-gray-600 dark:text-gray-300 text-sm">이 QR 코드는 새로고침하면 사라집니다.</p>
+                <div className="mt-4">
+                  <Button onClick={handleGetStarted} variant="outline">QR 저장/관리는 로그인 필요</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 기능 소개 */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
