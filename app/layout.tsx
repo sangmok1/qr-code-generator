@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import type React from "react"
 import Script from 'next/script'
 
+
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // const [contactOpen, setContactOpen] = useState(false)
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

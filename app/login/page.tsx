@@ -7,21 +7,23 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft } from "lucide-react"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, isLoading: langLoading } = useLanguage()
 
   useEffect(() => {
-    // URL에서 에러 파라미터 확인
+    // Check for error parameter in URL
     const errorParam = searchParams.get("error")
     if (errorParam) {
-      setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.")
+      setError(t.login.errorDefault)
     }
 
-    // 이미 로그인된 경우 대시보드로 리다이렉트
+    // Redirect to dashboard if already logged in
     getSession().then((session) => {
       if (session) {
         router.push("/dashboard")
@@ -39,13 +41,13 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError("로그인에 실패했습니다. 다시 시도해주세요.")
+        setError(t.login.errorLogin)
       } else if (result?.url) {
         router.push(result.url)
       }
     } catch (error) {
       console.error("Sign in error:", error)
-      setError("로그인 중 오류가 발생했습니다.")
+      setError(t.login.errorGeneral)
     } finally {
       setIsLoading(false)
     }
@@ -55,6 +57,17 @@ export default function LoginPage() {
     router.push("/")
   }
 
+  if (langLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
@@ -62,11 +75,14 @@ export default function LoginPage() {
           <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" size="sm" onClick={handleGoBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              돌아가기
+              {t.login.back}
             </Button>
           </div>
-          <CardTitle className="text-2xl font-bold">QR Code Generator</CardTitle>
-          <p className="text-muted-foreground mt-2">Sign in with Google to access the QR code generator</p>
+          <CardTitle className="text-2xl font-bold">{t.login.title}</CardTitle>
+          <p className="text-muted-foreground mt-2">{t.login.subtitle}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            {t.login.privacyNotice}
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
@@ -79,7 +95,7 @@ export default function LoginPage() {
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Signing in...
+                {t.login.signingIn}
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -101,13 +117,13 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continue with Google
+                {t.login.continueWithGoogle}
               </div>
             )}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            By signing in, you agree to our terms of service and privacy policy.
+            {t.login.terms}
           </div>
         </CardContent>
       </Card>
